@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smolvlm-realtime-demo
+  labels:
+    app: smolvlm-realtime-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smolvlm-realtime-demo
+  template:
+    metadata:
+      labels:
+        app: smolvlm-realtime-demo
+    spec:
+      serviceAccountName: smolvlm-sa
+      imagePullSecrets:
+      - name: quay-pull-secret
+      containers:
+      - name: smolvlm-demo
+        image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:0.1
+        ports:
+        - containerPort: 80
+          name: web
+        - containerPort: 8080
+          name: api
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+        env:
+        - name: HOME
+          value: "/root"
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smolvlm-realtime-demo-service
+  labels:
+    app: smolvlm-realtime-demo
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: web
+  selector:
+    app: smolvlm-realtime-demo
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: smolvlm-realtime-demo-route
+  labels:
+    app: smolvlm-realtime-demo
+spec:
+  to:
+    kind: Service
+    name: smolvlm-realtime-demo-service
+  port:
+    targetPort: web
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
