@@ -86,10 +86,10 @@ Run the complete stack in a single container using Podman or Docker.
 **Option A: Use pre-built image (Recommended)**
 ```bash
 # For ARM64 systems (Apple Silicon, ARM servers)
-podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:latest
+podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:0.1
 
 # For AMD64/x86_64 systems (Intel/AMD processors)
-podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:latest
+podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:0.1
 ```
 
 **Option B: Build from source**
@@ -148,8 +148,8 @@ Deploy to OpenShift for production use with automatic scaling and management.
    **Option A: Use pre-built image (Recommended)**
    ```bash
    # No build required - images are available at:
-   # ARM64: quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:latest
-   # AMD64: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:latest
+   # ARM64: quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:0.1
+   # AMD64: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:0.1
    ```
    
    **Option B: Build and push your own image**
@@ -171,10 +171,10 @@ Deploy to OpenShift for production use with automatic scaling and management.
          containers:
          - name: smolvlm-demo
            # For AMD64/x86_64 OpenShift clusters (most common)
-           image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:latest
+           image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:0.1
            
            # For ARM64 OpenShift clusters
-           # image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:latest
+           # image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:0.1
    ```
 
 3. **Deploy to OpenShift**
