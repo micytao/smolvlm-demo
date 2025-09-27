@@ -27,10 +27,25 @@ Perfect for development and testing on your local machine.
 #### Setup Instructions
 
 1. **Install llama.cpp**
+   
+   **Option A: Download pre-built binaries (Recommended)**
+   - Visit the [llama.cpp releases page](https://github.com/ggml-org/llama.cpp/releases)
+   - Download the appropriate binary for your system
+   - Extract and add to your PATH
+   
+   **Option B: Build from source**
    ```bash
    git clone https://github.com/ggml-org/llama.cpp.git
    cd llama.cpp
-   make
+   make llama-server
+   ```
+   
+   **Option C: Using package managers**
+   ```bash
+   # On macOS with Homebrew
+   brew install llama.cpp
+   
+   # On other systems, check the official documentation
    ```
 
 2. **Start the llama.cpp server**
