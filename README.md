@@ -2,15 +2,19 @@
 
 ![demo](./demo.png)
 
-This repository is a simple demo for how to use llama.cpp server with SmolVLM 500M to get real-time object detection from your camera feed. The demo provides a web interface that captures camera frames and sends them to the SmolVLM model for analysis.
+This repository is a modern demo for how to use llama.cpp server with SmolVLM 500M to get real-time object detection from your camera feed. The demo provides a beautiful, responsive web interface that captures camera frames and sends them to the SmolVLM model for analysis.
 
 ## Features
 
-- Real-time camera feed processing
-- Customizable AI instructions
-- Adjustable frame capture intervals
-- Web-based interface
-- Multiple deployment options
+- 🎥 **Real-time camera feed processing** with smart endpoint detection
+- 🎨 **Modern, responsive UI** with dark/light mode toggle
+- 🤖 **Customizable AI instructions** with preset options
+- ⏱️ **Adjustable frame capture intervals** (100ms to 2s)
+- 🌐 **Web-based interface** with professional styling
+- 🚀 **Multiple deployment options** (local, container, OpenShift)
+- 📱 **Mobile-friendly design** with touch support
+- ⌨️ **Keyboard shortcuts** (Spacebar to start/stop, Escape to stop)
+- 🔧 **Smart API endpoint management** with preset buttons
 
 ## Deployment Options
 
@@ -50,10 +54,11 @@ Perfect for development and testing on your local machine.
 
 2. **Start the llama.cpp server**
    ```bash
-   llama-server -hf ggml-org/SmolVLM-500M-Instruct-GGUF
+   llama-server -hf ggml-org/SmolVLM-500M-Instruct-GGUF --port 8080
    ```
    
    **Notes:**
+   - The server runs on port 8080 by default
    - Add `-ngl 99` to enable GPU acceleration (NVIDIA/AMD/Intel GPU)
    - You can try other models from [here](https://github.com/ggml-org/llama.cpp/blob/master/docs/multimodal.md)
    - First run will download the model (~2GB)
@@ -66,9 +71,12 @@ Perfect for development and testing on your local machine.
 
 4. **Start using the demo**
    - Grant camera permissions when prompted
+   - The API endpoint will be automatically detected or you can use preset buttons
+   - Toggle between light and dark mode using the theme button
    - Optionally modify the instruction (e.g., "Describe what you see in JSON format")
    - Adjust the capture interval (default: 500ms)
-   - Click "Start" and enjoy real-time AI vision!
+   - Use keyboard shortcuts: Spacebar to start/stop, Escape to stop
+   - Click "Start Processing" and enjoy real-time AI vision!
 
 ---
 
@@ -86,10 +94,10 @@ Run the complete stack in a single container using Podman or Docker.
 **Option A: Use pre-built image (Recommended)**
 ```bash
 # For ARM64 systems (Apple Silicon, ARM servers)
-podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:0.1
+podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-arm64:0.1
 
 # For AMD64/x86_64 systems (Intel/AMD processors)
-podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:0.1
+podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-amd64:0.1
 ```
 
 **Option B: Build from source**
@@ -111,8 +119,9 @@ podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-realtime
 #### Container Architecture
 The container includes:
 - **llama.cpp server**: Serves the SmolVLM model on port 8080
-- **Nginx web server**: Serves the HTML frontend on port 80 and proxies API calls
+- **Nginx web server**: Serves the modern HTML frontend on port 80 and proxies API calls
 - **Supervisor**: Manages both services automatically
+- **Modern UI**: Features dark/light mode, responsive design, and smart endpoint detection
 
 #### Container Management
 
@@ -148,8 +157,8 @@ Deploy to OpenShift for production use with automatic scaling and management.
    **Option A: Use pre-built image (Recommended)**
    ```bash
    # No build required - images are available at:
-   # ARM64: quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:0.1
-   # AMD64: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:0.1
+   # ARM64: quay.io/rh_ee_micyang/smolvlm-demo-arm64:0.1
+   # AMD64: quay.io/rh_ee_micyang/smolvlm-demo-amd64:0.1
    ```
    
    **Option B: Build and push your own image**
@@ -171,10 +180,10 @@ Deploy to OpenShift for production use with automatic scaling and management.
          containers:
          - name: smolvlm-demo
            # For AMD64/x86_64 OpenShift clusters (most common)
-           image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:0.1
+           image: quay.io/rh_ee_micyang/smolvlm-demo-amd64:0.1
            
            # For ARM64 OpenShift clusters
-           # image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:0.1
+           # image: quay.io/rh_ee_micyang/smolvlm-demo-arm64:0.1
    ```
 
 3. **Deploy to OpenShift**
@@ -224,14 +233,25 @@ oc rollout restart deployment/smolvlm-realtime-demo
 
 ## Usage Guide
 
+### Modern Interface Features
+
 1. **Camera Access**: Grant browser permission to access your camera
-2. **Customize Instructions**: Modify the prompt to get different types of responses:
-   - "What objects do you see?" (default)
+2. **Theme Toggle**: Switch between light and dark mode using the moon/sun icon
+3. **Smart API Endpoint**: 
+   - Automatically detects environment (local file vs server)
+   - Use preset buttons: "Local:8080", "Ollama", or "Clear"
+   - Manual entry supported with helpful placeholder text
+4. **Customize Instructions**: Modify the prompt to get different types of responses:
+   - "What do you see?" (default)
    - "Describe the scene in detail"
    - "List all visible objects in JSON format"
    - "What colors are prominent in this image?"
-3. **Adjust Interval**: Control how frequently frames are captured and analyzed
-4. **View Responses**: AI responses appear in real-time below the camera feed
+5. **Adjust Interval**: Control how frequently frames are captured (100ms to 2s)
+6. **Keyboard Shortcuts**: 
+   - **Spacebar**: Start/stop processing
+   - **Escape**: Stop processing
+7. **Status Indicators**: Visual feedback with icons and colors
+8. **Responsive Design**: Works on desktop, tablet, and mobile devices
 
 ## Performance Considerations
 
@@ -268,9 +288,12 @@ You can experiment with other vision models supported by llama.cpp:
 
 ### UI Modifications
 Edit `index.html` to customize:
-- Interface styling and layout
+- Modern interface styling with CSS custom properties
+- Dark/light theme colors and animations
 - Default instructions and intervals
 - Response formatting and display
+- Preset API endpoints
+- Keyboard shortcuts and interactions
 
 ## Contributing
 

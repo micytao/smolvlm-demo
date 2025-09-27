@@ -1,6 +1,6 @@
 # SmolVLM Real-time Camera Demo - Build & Deploy Guide
 
-This guide shows how to build and deploy the SmolVLM real-time camera demo as a single container on OpenShift using Podman.
+This guide shows how to build and deploy the SmolVLM real-time camera demo with modern UI as a single container on OpenShift using Podman.
 
 ## Prerequisites
 
@@ -12,8 +12,9 @@ This guide shows how to build and deploy the SmolVLM real-time camera demo as a 
 
 The container includes:
 - **llama.cpp server**: Serves the SmolVLM-500M-Instruct model on port 8080
-- **Nginx web server**: Serves the HTML frontend on port 80 and proxies API calls
+- **Nginx web server**: Serves the modern HTML frontend on port 80 and proxies API calls
 - **Supervisor**: Manages both services
+- **Modern UI Features**: Dark/light mode, responsive design, smart API endpoint detection
 
 ## Build Instructions
 
@@ -25,7 +26,7 @@ The container includes:
 # Build for x86_64 OpenShift deployment
 podman build \
   --platform linux/amd64 \
-  --tag your-registry/smolvlm-realtime-demo:latest \
+  --tag your-registry/smolvlm-demo:latest \
   -f Containerfile .
 
 # For detailed multi-arch build instructions, see MULTI_ARCH_BUILD.md
@@ -35,27 +36,28 @@ podman build \
 
 ```bash
 # Build with Podman (native architecture)
-podman build -t smolvlm-realtime-demo:latest -f Containerfile .
+podman build -t smolvlm-demo:latest -f Containerfile .
 
 # Tag for registry
-podman tag smolvlm-realtime-demo:latest your-registry/smolvlm-realtime-demo:latest
+podman tag smolvlm-demo:latest your-registry/smolvlm-demo:latest
 ```
 
 ### 2. Test Locally (Optional)
 
 ```bash
 # Run locally to test
-podman run -p 8080:80 --name smolvlm-demo smolvlm-realtime-demo:latest
+podman run -p 8080:80 --name smolvlm-demo smolvlm-demo:latest
 
 # Access the demo at http://localhost:8080
-# The web interface will be served on port 80 inside the container
+# The modern web interface will be served on port 80 inside the container
+# Features include dark/light mode toggle and smart endpoint detection
 ```
 
 ### 3. Push to Registry
 
 ```bash
 # Push to your container registry
-podman push your-registry/smolvlm-realtime-demo:latest
+podman push your-registry/smolvlm-demo:latest
 ```
 
 ## Deploy to OpenShift
@@ -70,7 +72,7 @@ spec:
     spec:
       containers:
       - name: smolvlm-demo
-        image: your-registry/smolvlm-realtime-demo:latest  # Update this line
+        image: your-registry/smolvlm-demo:latest  # Update this line
 ```
 
 ### 2. Deploy to OpenShift
@@ -99,12 +101,15 @@ oc get route smolvlm-realtime-demo-route
 
 ## Usage
 
-1. **Open the application**: Navigate to the OpenShift route URL
-2. **Grant camera permissions**: Allow the browser to access your camera
-3. **Customize instruction**: Modify the instruction text (default: "What do you see?")
-4. **Adjust interval**: Select how frequently to send frames (default: 500ms)
-5. **Start detection**: Click "Start" to begin real-time object detection
-6. **View results**: See the AI's responses in the response area
+1. **Open the application**: Navigate to the OpenShift route URL (automatically HTTPS)
+2. **Choose your theme**: Toggle between light and dark mode using the theme button
+3. **Grant camera permissions**: Allow the browser to access your camera
+4. **Set API endpoint**: Use preset buttons or enter manually (auto-detected in container)
+5. **Customize instruction**: Modify the instruction text (default: "What do you see?")
+6. **Adjust interval**: Select how frequently to send frames (100ms to 2s)
+7. **Use keyboard shortcuts**: Spacebar to start/stop, Escape to stop
+8. **Start detection**: Click "Start Processing" to begin real-time object detection
+9. **View results**: See the AI's responses with visual status indicators
 
 ## Troubleshooting
 
@@ -155,7 +160,12 @@ command=/app/llama.cpp/build/bin/llama-server -hf your-model-name --host 0.0.0.0
 
 ### UI Modifications
 
-Edit `index.html` to customize the interface, instructions, or styling.
+Edit `index.html` to customize:
+- Modern interface with CSS custom properties
+- Dark/light theme colors and animations
+- Default instructions and API endpoints
+- Responsive design breakpoints
+- Keyboard shortcuts and interactions
 
 ### Performance Tuning
 

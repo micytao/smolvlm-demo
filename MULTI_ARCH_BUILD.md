@@ -1,6 +1,6 @@
 # Multi-Architecture Build Guide
 
-This guide shows how to build the SmolVLM container for multiple architectures (ARM64 and x86_64) from your Apple Silicon Mac for deployment on x86_64 OpenShift.
+This guide shows how to build the SmolVLM container with modern UI for multiple architectures (ARM64 and x86_64) from your Apple Silicon Mac for deployment on x86_64 OpenShift.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ This guide shows how to build the SmolVLM container for multiple architectures (
 brew install qemu
 
 # Create a multi-arch builder
-podman manifest create smolvlm-realtime-demo:latest
+podman manifest create smolvlm-demo:latest
 ```
 
 ### 2. Build for Multiple Architectures
@@ -26,28 +26,28 @@ podman manifest create smolvlm-realtime-demo:latest
 # Build for ARM64 (your local Mac)
 podman build \
   --platform linux/arm64 \
-  --tag smolvlm-realtime-demo:arm64 \
+  --tag smolvlm-demo:arm64 \
   -f Containerfile .
 
 # Build for x86_64 (your OpenShift cluster)
 podman build \
   --platform linux/amd64 \
-  --tag smolvlm-realtime-demo:amd64 \
+  --tag smolvlm-demo:amd64 \
   -f Containerfile .
 
 # Add both architectures to the manifest
-podman manifest add smolvlm-realtime-demo:latest smolvlm-realtime-demo:arm64
-podman manifest add smolvlm-realtime-demo:latest smolvlm-realtime-demo:amd64
+podman manifest add smolvlm-demo:latest smolvlm-demo:arm64
+podman manifest add smolvlm-demo:latest smolvlm-demo:amd64
 ```
 
 ### 3. Push Multi-Architecture Image
 
 ```bash
 # Tag for your registry
-podman tag smolvlm-realtime-demo:latest your-registry/smolvlm-realtime-demo:latest
+podman tag smolvlm-demo:latest your-registry/smolvlm-demo:latest
 
 # Push the multi-arch manifest
-podman manifest push smolvlm-realtime-demo:latest your-registry/smolvlm-realtime-demo:latest
+podman manifest push smolvlm-demo:latest your-registry/smolvlm-demo:latest
 ```
 
 ## Method 2: Direct Cross-Platform Build (Alternative)
@@ -58,11 +58,11 @@ podman manifest push smolvlm-realtime-demo:latest your-registry/smolvlm-realtime
 # Build specifically for x86_64 OpenShift
 podman build \
   --platform linux/amd64 \
-  --tag your-registry/smolvlm-realtime-demo:latest \
+  --tag your-registry/smolvlm-demo:latest \
   -f Containerfile .
 
 # Push to registry
-podman push your-registry/smolvlm-realtime-demo:latest
+podman push your-registry/smolvlm-demo:latest
 ```
 
 ## Method 3: Using Docker Buildx (If you have Docker)
@@ -83,7 +83,7 @@ docker buildx inspect --bootstrap
 # Build and push for both architectures
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  --tag your-registry/smolvlm-realtime-demo:latest \
+  --tag your-registry/smolvlm-demo:latest \
   --push \
   -f Containerfile .
 ```
@@ -94,17 +94,17 @@ docker buildx build \
 
 ```bash
 # Inspect the manifest
-podman manifest inspect your-registry/smolvlm-realtime-demo:latest
+podman manifest inspect your-registry/smolvlm-demo:latest
 
 # Or with Docker
-docker buildx imagetools inspect your-registry/smolvlm-realtime-demo:latest
+docker buildx imagetools inspect your-registry/smolvlm-demo:latest
 ```
 
 ### Test Local ARM64 Build
 
 ```bash
-# Test on your Mac (ARM64)
-podman run --platform linux/arm64 -p 8080:80 smolvlm-realtime-demo:arm64
+# Test on your Mac (ARM64) - includes modern UI with dark/light mode
+podman run --platform linux/arm64 -p 8080:80 smolvlm-demo:arm64
 ```
 
 ## Containerfile Optimizations for Multi-Arch
@@ -128,7 +128,7 @@ spec:
     spec:
       containers:
       - name: smolvlm-demo
-        image: your-registry/smolvlm-realtime-demo:latest  # Multi-arch image
+        image: your-registry/smolvlm-demo:latest  # Multi-arch image
         # ... rest of configuration
 ```
 
@@ -172,14 +172,14 @@ oc exec -it <pod-name> -- uname -m
 
 **Docker Hub:**
 ```bash
-podman tag smolvlm-realtime-demo:latest docker.io/username/smolvlm-realtime-demo:latest
-podman push docker.io/username/smolvlm-realtime-demo:latest
+podman tag smolvlm-demo:latest docker.io/username/smolvlm-demo:latest
+podman push docker.io/username/smolvlm-demo:latest
 ```
 
 **Quay.io:**
 ```bash
-podman tag smolvlm-realtime-demo:latest quay.io/username/smolvlm-realtime-demo:latest
-podman push quay.io/username/smolvlm-realtime-demo:latest
+podman tag smolvlm-demo:latest quay.io/username/smolvlm-demo:latest
+podman push quay.io/username/smolvlm-demo:latest
 ```
 
 **OpenShift Internal Registry:**
@@ -188,8 +188,8 @@ podman push quay.io/username/smolvlm-realtime-demo:latest
 oc get route default-route -n openshift-image-registry
 
 # Tag and push
-podman tag smolvlm-realtime-demo:latest <registry-route>/your-project/smolvlm-realtime-demo:latest
-podman push <registry-route>/your-project/smolvlm-realtime-demo:latest
+podman tag smolvlm-demo:latest <registry-route>/your-project/smolvlm-demo:latest
+podman push <registry-route>/your-project/smolvlm-demo:latest
 ```
 
 ## Performance Notes
