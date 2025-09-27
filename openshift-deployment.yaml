@@ -19,7 +19,7 @@ spec:
       - name: quay-pull-secret
       containers:
       - name: smolvlm-demo
-        image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:0.1
+        image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:latest
         ports:
         - containerPort: 80
           name: web

@@ -83,6 +83,16 @@ Run the complete stack in a single container using Podman or Docker.
 
 #### Quick Start
 
+**Option A: Use pre-built image (Recommended)**
+```bash
+# For ARM64 systems (Apple Silicon, ARM servers)
+podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:latest
+
+# For AMD64/x86_64 systems (Intel/AMD processors)
+podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:latest
+```
+
+**Option B: Build from source**
 1. **Build the container**
    ```bash
    podman build -t smolvlm-demo:latest -f Containerfile .
@@ -133,7 +143,16 @@ Deploy to OpenShift for production use with automatic scaling and management.
 
 #### Deployment Steps
 
-1. **Build and push the container image**
+1. **Use pre-built image or build your own**
+   
+   **Option A: Use pre-built image (Recommended)**
+   ```bash
+   # No build required - images are available at:
+   # ARM64: quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:latest
+   # AMD64: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:latest
+   ```
+   
+   **Option B: Build and push your own image**
    ```bash
    # Build for OpenShift (x86_64)
    podman build --platform linux/amd64 -t your-registry/smolvlm-demo:latest -f Containerfile .
@@ -144,14 +163,18 @@ Deploy to OpenShift for production use with automatic scaling and management.
 
 2. **Update the deployment configuration**
    
-   Edit `openshift-deployment.yaml` and update the image reference:
+   Edit `openshift-deployment.yaml` and update the image reference based on your OpenShift cluster architecture:
    ```yaml
    spec:
      template:
        spec:
          containers:
          - name: smolvlm-demo
-           image: your-registry/smolvlm-demo:latest  # Update this line
+           # For AMD64/x86_64 OpenShift clusters (most common)
+           image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-amd64:latest
+           
+           # For ARM64 OpenShift clusters
+           # image: quay.io/rh_ee_micyang/smolvlm-realtime-demo-arm64:latest
    ```
 
 3. **Deploy to OpenShift**
