@@ -23,7 +23,6 @@ Perfect for development and testing on your local machine.
 #### Prerequisites
 - [llama.cpp](https://github.com/ggml-org/llama.cpp) installed
 - A modern web browser with camera access
-- Python 3 (optional, for local web server)
 
 #### Setup Instructions
 
@@ -36,7 +35,7 @@ Perfect for development and testing on your local machine.
 
 2. **Start the llama.cpp server**
    ```bash
-   ./llama-server -hf ggml-org/SmolVLM-500M-Instruct-GGUF --host 0.0.0.0 --port 8080
+   llama-server -hf ggml-org/SmolVLM-500M-Instruct-GGUF
    ```
    
    **Notes:**
@@ -44,22 +43,10 @@ Perfect for development and testing on your local machine.
    - You can try other models from [here](https://github.com/ggml-org/llama.cpp/blob/master/docs/multimodal.md)
    - First run will download the model (~2GB)
 
-3. **Serve the web interface**
-   
-   **Option A: Simple file serving**
+3. **Open the web interface**
    ```bash
-   # Open index.html directly in your browser
+   # Simply open index.html in your browser
    open index.html
-   ```
-   
-   **Option B: Local web server (recommended for HTTPS)**
-   ```bash
-   # Using Python
-   python3 -m http.server 8000
-   # Then open http://localhost:8000
-   
-   # Or using Node.js
-   npx http-server -p 8000
    ```
 
 4. **Start using the demo**
