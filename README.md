@@ -92,7 +92,7 @@ Perfect for development and testing on your local machine.
 
 ### 🐳 Local Container Deployment
 
-Run the complete stack in a single container using Podman or Docker.
+Run the complete stack using two separate containers - one for the AI model and one for the web interface.
 
 #### Prerequisites
 - Podman or Docker installed
@@ -101,52 +101,63 @@ Run the complete stack in a single container using Podman or Docker.
 
 #### Quick Start
 
-**Option A: Use pre-built image (Recommended)**
+**Option A: Use pre-built images (Recommended)**
 ```bash
-# For ARM64 systems (Apple Silicon, ARM servers)
-podman run -p 8080:8000 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-arm64:0.1
+# Start the model container (AI backend)
+podman run -d -p 8080:8080 --name smolvlm-model quay.io/rh_ee_micyang/smolvlm-model:0.1
 
-# For AMD64/x86_64 systems (Intel/AMD processors)
-podman run -p 8080:8000 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-amd64:0.1
+# Start the web container (frontend)
+podman run -d -p 8000:8000 --name smolvlm-web quay.io/rh_ee_micyang/smolvlm-web:0.1
+
+# Note: ARM64 images are not currently available - use Option B to build from source
 ```
 
 **Option B: Build from source**
-1. **Build the container**
+1. **Build both containers**
    ```bash
-   podman build -t smolvlm-demo:latest -f Containerfile .
+   # Build model container
+   podman build -f Containerfile.model -t smolvlm-model:latest .
+   
+   # Build web container
+   podman build -f Containerfile.web -t smolvlm-web:latest .
    ```
 
-2. **Run the container**
+2. **Run both containers**
    ```bash
-   podman run -p 8080:8000 --name smolvlm-demo smolvlm-demo:latest
+   # Start the model container (AI backend)
+   podman run -d -p 8080:8080 --name smolvlm-model smolvlm-model:latest
+   
+   # Start the web container (frontend)
+   podman run -d -p 8000:8000 --name smolvlm-web smolvlm-web:latest
    ```
 
 3. **Access the demo**
-   - Open http://localhost:8080 in your browser
+   - Open http://localhost:8000 in your browser
    - Grant camera permissions
    - Start detecting objects!
 
-#### Container Architecture
-The container includes:
-- **llama.cpp server**: Serves the SmolVLM model with CUDA acceleration on port 8080 with OpenAI-compatible API
-- **Nginx web server**: Serves the modern HTML frontend on port 8000 (mapped to external port via service) and proxies API calls
+#### Two-Container Architecture
+The deployment uses separate containers for better resource management:
+- **Model Container**: Runs llama.cpp server with CUDA-enabled SmolVLM model on port 8080
+- **Web Container**: Serves the modern HTML frontend on port 8000 and proxies API calls to the model container
 - **Modern UI**: Features dark/light mode, responsive design, and smart endpoint detection
-- **Security**: Runs as non-root user for enhanced security in OpenShift environments
+- **Security**: Both containers run as non-root users for enhanced security
 
 #### Container Management
 
 ```bash
 # View logs
-podman logs -f smolvlm-demo
+podman logs -f smolvlm-model
+podman logs -f smolvlm-web
 
-# Stop the container
-podman stop smolvlm-demo
+# Stop both containers
+podman stop smolvlm-model smolvlm-web
 
-# Remove the container
-podman rm smolvlm-demo
+# Remove both containers
+podman rm smolvlm-model smolvlm-web
 
-# Remove the image
-podman rmi smolvlm-demo:latest
+# Remove the images
+podman rmi smolvlm-model:latest smolvlm-web:latest
 ```
 
 ---
