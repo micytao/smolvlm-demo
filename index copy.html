@@ -617,8 +617,8 @@
                     updateStatus('ready', 'Camera ready - Click start to begin', 'check-circle');
                     responseText.value = "Camera access granted. Ready to start processing.";
                 } else {
-                    updateStatus('ready', 'Camera ready - Using proxy endpoint', 'check-circle');
-                    responseText.value = "Camera access granted. Using proxy endpoint for API calls. Ready to start processing.";
+                    updateStatus('ready', 'Camera ready - Enter API endpoint to begin', 'check-circle');
+                    responseText.value = "Camera access granted. Please enter your API endpoint URL above to start processing.";
                 }
             }
         }
@@ -684,25 +684,22 @@
                 if (response.ok) {
                     const data = await response.json();
                     updateStatus('ready', 'API connection successful', 'check-circle');
-                    const serverInfo = baseURL.value.trim() || 'proxy endpoint';
-                    responseText.value = `✅ API connection successful!\nServer: ${serverInfo}\nModel: ${modelSelect.value}\nResponse: ${data.choices?.[0]?.message?.content || 'API responded correctly'}`;
+                    responseText.value = `✅ API connection successful!\nServer: ${baseURL.value}\nModel: ${modelSelect.value}\nResponse: ${data.choices?.[0]?.message?.content || 'API responded correctly'}`;
                 } else {
                     const errorText = await response.text();
                     updateStatus('ready', 'Server reachable but API error', 'exclamation-triangle');
-                    const serverInfo = baseURL.value.trim() || 'proxy endpoint';
-                    responseText.value = `⚠️ Server reachable but API returned error: ${response.status}\nEndpoint: ${serverInfo}\nError: ${errorText}`;
+                    responseText.value = `⚠️ Server reachable but API returned error: ${response.status}\nEndpoint: ${baseURL.value}\nError: ${errorText}`;
                 }
             } catch (error) {
                 console.error('Connection test error:', error);
                 updateStatus('error', 'Connection failed', 'exclamation-triangle');
                 
-                const serverInfo = baseURL.value.trim() || 'proxy endpoint';
                 if (error.name === 'AbortError') {
-                    responseText.value = `❌ Connection test timed out after 10 seconds.\nEndpoint: ${serverInfo}\n\nPlease check:\n1. Is the server running?\n2. Is the URL correct?\n3. Are you experiencing network issues?`;
+                    responseText.value = `❌ Connection test timed out after 10 seconds.\nEndpoint: ${baseURL.value}\n\nPlease check:\n1. Is the server running?\n2. Is the URL correct?\n3. Are you experiencing network issues?`;
                 } else if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-                    responseText.value = `❌ CORS or connection error.\nEndpoint: ${serverInfo}\n\nFor Ollama users:\n1. Try: ollama serve --host 0.0.0.0\n2. Or set OLLAMA_ORIGINS=* environment variable\n\nFor llama.cpp users:\n1. Make sure server started with --cors flag\n\nError: ${error.message}`;
+                    responseText.value = `❌ CORS or connection error.\nEndpoint: ${baseURL.value}\n\nFor Ollama users:\n1. Try: ollama serve --host 0.0.0.0\n2. Or set OLLAMA_ORIGINS=* environment variable\n\nFor llama.cpp users:\n1. Make sure server started with --cors flag\n\nError: ${error.message}`;
                 } else {
-                    responseText.value = `❌ Connection error: ${error.message}\nEndpoint: ${serverInfo}`;
+                    responseText.value = `❌ Connection error: ${error.message}\nEndpoint: ${baseURL.value}`;
                 }
             }
         }
@@ -807,8 +804,8 @@
                 
                 // Check if API endpoint is set
                 if (!baseURL.value.trim()) {
-                    updateStatus('ready', 'Camera ready - Using proxy endpoint', 'check-circle');
-                    responseText.value = "Camera access granted. Using proxy endpoint for API calls. Ready to start processing.";
+                    updateStatus('ready', 'Camera ready - Enter API endpoint to begin', 'check-circle');
+                    responseText.value = "Camera access granted. Please enter your API endpoint URL above to start processing.";
                 } else {
                     updateStatus('ready', 'Camera ready - Click start to begin', 'check-circle');
                     responseText.value = "Camera access granted. Ready to start processing.";

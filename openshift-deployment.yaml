@@ -1,72 +1,217 @@
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smolvlm-demo
+  labels:
+    name: smolvlm-demo
+
+---
+# Model Service Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: smolvlm-realtime-demo
+  name: smolvlm-model
+  namespace: smolvlm-demo
   labels:
-    app: smolvlm-realtime-demo
+    app: smolvlm-model
+    component: model-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: smolvlm-realtime-demo
+      app: smolvlm-model
   template:
     metadata:
       labels:
-        app: smolvlm-realtime-demo
+        app: smolvlm-model
+        component: model-server
     spec:
-      serviceAccountName: smolvlm-sa
-      imagePullSecrets:
-      - name: quay-pull-secret
       containers:
-      - name: smolvlm-demo
-        image: quay.io/rh_ee_micyang/smolvlm-demo-amd64:0.1
+      - name: smolvlm-model
+        image: quay.io/rh_ee_micyang/smolvlm-model:0.1
+        imagePullPolicy: Always
         ports:
-        - containerPort: 80
-          name: web
         - containerPort: 8080
           name: api
         resources:
           requests:
             memory: "4Gi"
             cpu: "2"
+            nvidia.com/gpu: "1"
           limits:
             memory: "8Gi"
             cpu: "4"
+            nvidia.com/gpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         env:
-        - name: HOME
-          value: "/root"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
         securityContext:
           allowPrivilegeEscalation: false
-          runAsNonRoot: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+
 ---
+# Model Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: smolvlm-realtime-demo-service
+  name: smolvlm-model-service
+  namespace: smolvlm-demo
   labels:
-    app: smolvlm-realtime-demo
+    app: smolvlm-model
 spec:
-  type: ClusterIP
-  ports:
-  - port: 80
-    targetPort: 80
-    protocol: TCP
-    name: web
   selector:
-    app: smolvlm-realtime-demo
+    app: smolvlm-model
+  ports:
+  - name: api
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
 ---
+# Web Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smolvlm-web
+  namespace: smolvlm-demo
+  labels:
+    app: smolvlm-web
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: smolvlm-web
+  template:
+    metadata:
+      labels:
+        app: smolvlm-web
+        component: frontend
+    spec:
+      containers:
+      - name: smolvlm-web
+        image: quay.io/rh_ee_micyang/smolvlm-web:0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 101
+          capabilities:
+            drop:
+            - ALL
+
+---
+# Web Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: smolvlm-web-service
+  namespace: smolvlm-demo
+  labels:
+    app: smolvlm-web
+spec:
+  selector:
+    app: smolvlm-web
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Route for external access
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: smolvlm-realtime-demo-route
+  name: smolvlm-demo-route
+  namespace: smolvlm-demo
   labels:
-    app: smolvlm-realtime-demo
+    app: smolvlm-web
 spec:
   to:
     kind: Service
-    name: smolvlm-realtime-demo-service
+    name: smolvlm-web-service
   port:
-    targetPort: web
+    targetPort: http
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+
+---
+# Network Policy (optional - for enhanced security)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: smolvlm-network-policy
+  namespace: smolvlm-demo
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: smolvlm-web
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8080
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - {}

@@ -25,43 +25,53 @@ Choose the deployment method that best fits your needs:
 Perfect for development and testing on your local machine.
 
 #### Prerequisites
-- [llama.cpp](https://github.com/ggml-org/llama.cpp) installed
+- [llama.cpp](https://github.com/ggml-org/llama.cpp) installed with CUDA support (recommended)
 - A modern web browser with camera access
+- NVIDIA GPU with CUDA drivers (optional but recommended for performance)
 
 #### Setup Instructions
 
-1. **Install llama.cpp**
+1. **Install llama.cpp with CUDA support**
    
    **Option A: Download pre-built binaries (Recommended)**
    - Visit the [llama.cpp releases page](https://github.com/ggml-org/llama.cpp/releases)
-   - Download the appropriate binary for your system
+   - Download the CUDA-enabled binary for your system
    - Extract and add to your PATH
    
-   **Option B: Build from source**
+   **Option B: Build from source with CUDA**
    ```bash
    git clone https://github.com/ggml-org/llama.cpp.git
    cd llama.cpp
-   make llama-server
+   # Build with CUDA support
+   make LLAMA_CUDA=1 llama-server
    ```
    
    **Option C: Using package managers**
    ```bash
-   # On macOS with Homebrew
+   # On macOS with Homebrew (CPU only)
    brew install llama.cpp
    
-   # On other systems, check the official documentation
+   # For CUDA support, build from source or use pre-built binaries
    ```
 
-2. **Start the llama.cpp server**
+2. **Start the model server**
+   
+   **Using llama.cpp (Recommended):**
    ```bash
-   llama-server -hf ggml-org/SmolVLM-500M-Instruct-GGUF --port 8080
+   # Basic command (CPU only)
+   llama-server -hf ggml-org/SmolVLM-500M-Instruct-GGUF --port 8080 --host 0.0.0.0
+   
+   # With GPU acceleration (CUDA)
+   llama-server -hf ggml-org/SmolVLM-500M-Instruct-GGUF --port 8080 --host 0.0.0.0 -ngl 999
    ```
    
    **Notes:**
    - The server runs on port 8080 by default
-   - Add `-ngl 99` to enable GPU acceleration (NVIDIA/AMD/Intel GPU)
+   - Add `-ngl 999` to enable maximum GPU acceleration (NVIDIA CUDA)
+   - Use `--host 0.0.0.0` to allow external connections
    - You can try other models from [here](https://github.com/ggml-org/llama.cpp/blob/master/docs/multimodal.md)
-   - First run will download the model (~2GB)
+   - First run will download the model (~2GB for SmolVLM)
+   - llama.cpp provides OpenAI-compatible API endpoints
 
 3. **Open the web interface**
    ```bash
@@ -94,10 +104,10 @@ Run the complete stack in a single container using Podman or Docker.
 **Option A: Use pre-built image (Recommended)**
 ```bash
 # For ARM64 systems (Apple Silicon, ARM servers)
-podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-arm64:0.1
+podman run -p 8080:8000 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-arm64:0.1
 
 # For AMD64/x86_64 systems (Intel/AMD processors)
-podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-amd64:0.1
+podman run -p 8080:8000 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-amd64:0.1
 ```
 
 **Option B: Build from source**
@@ -108,7 +118,7 @@ podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-amd
 
 2. **Run the container**
    ```bash
-   podman run -p 8080:80 --name smolvlm-demo smolvlm-demo:latest
+   podman run -p 8080:8000 --name smolvlm-demo smolvlm-demo:latest
    ```
 
 3. **Access the demo**
@@ -118,10 +128,10 @@ podman run -p 8080:80 --name smolvlm-demo quay.io/rh_ee_micyang/smolvlm-demo-amd
 
 #### Container Architecture
 The container includes:
-- **llama.cpp server**: Serves the SmolVLM model on port 8080
-- **Nginx web server**: Serves the modern HTML frontend on port 80 and proxies API calls
-- **Supervisor**: Manages both services automatically
+- **llama.cpp server**: Serves the SmolVLM model with CUDA acceleration on port 8080 with OpenAI-compatible API
+- **Nginx web server**: Serves the modern HTML frontend on port 8000 (mapped to external port via service) and proxies API calls
 - **Modern UI**: Features dark/light mode, responsive design, and smart endpoint detection
+- **Security**: Runs as non-root user for enhanced security in OpenShift environments
 
 #### Container Management
 
@@ -143,47 +153,51 @@ podman rmi smolvlm-demo:latest
 
 ### ☁️ OpenShift Deployment
 
-Deploy to OpenShift for production use with automatic scaling and management.
+Deploy to OpenShift for production use with automatic scaling and management using a two-container architecture.
 
 #### Prerequisites
 - Access to an OpenShift cluster
 - `oc` CLI tool installed and configured
 - Container registry access (e.g., Quay.io)
 
+#### Architecture Overview
+The OpenShift deployment uses two separate containers:
+1. **Model Container**: Runs llama.cpp server with CUDA-enabled SmolVLM model
+2. **Web Container**: Serves the frontend and proxies API calls
+
 #### Deployment Steps
 
-1. **Use pre-built image or build your own**
+1. **Build and push container images**
    
-   **Option A: Use pre-built image (Recommended)**
+   **Option A: Use the provided build script (Recommended)**
    ```bash
-   # No build required - images are available at:
-   # ARM64: quay.io/rh_ee_micyang/smolvlm-demo-arm64:0.1
-   # AMD64: quay.io/rh_ee_micyang/smolvlm-demo-amd64:0.1
+   # Login to your container registry
+   podman login quay.io
+   
+   # Build and push both containers
+   ./build-and-push.sh
    ```
    
-   **Option B: Build and push your own image**
+   **Option B: Manual build**
    ```bash
-   # Build for OpenShift (x86_64)
-   podman build --platform linux/amd64 -t your-registry/smolvlm-demo:latest -f Containerfile .
+   # Build model container
+   podman build -f Containerfile.model -t quay.io/your-username/smolvlm-model:latest .
+   podman push quay.io/your-username/smolvlm-model:latest
    
-   # Push to registry
-   podman push your-registry/smolvlm-demo:latest
+   # Build web container
+   podman build -f Containerfile.web -t quay.io/your-username/smolvlm-web:latest .
+   podman push quay.io/your-username/smolvlm-web:latest
    ```
 
 2. **Update the deployment configuration**
    
-   Edit `openshift-deployment.yaml` and update the image reference based on your OpenShift cluster architecture:
+   Edit `openshift-deployment.yaml` and update the image references if using your own registry:
    ```yaml
-   spec:
-     template:
-       spec:
-         containers:
-         - name: smolvlm-demo
-           # For AMD64/x86_64 OpenShift clusters (most common)
-           image: quay.io/rh_ee_micyang/smolvlm-demo-amd64:0.1
-           
-           # For ARM64 OpenShift clusters
-           # image: quay.io/rh_ee_micyang/smolvlm-demo-arm64:0.1
+   # Model container image
+   image: quay.io/your-username/smolvlm-model:latest
+   
+   # Web container image  
+   image: quay.io/your-username/smolvlm-web:latest
    ```
 
 3. **Deploy to OpenShift**
@@ -195,40 +209,49 @@ Deploy to OpenShift for production use with automatic scaling and management.
    oc apply -f openshift-deployment.yaml
    
    # Check deployment status
-   oc get pods
-   oc get services
-   oc get routes
+   oc get pods -n smolvlm-demo
+   oc get services -n smolvlm-demo
+   oc get routes -n smolvlm-demo
    ```
 
 4. **Access the application**
    ```bash
    # Get the route URL
-   oc get route smolvlm-realtime-demo-route
+   oc get route smolvlm-demo-route -n smolvlm-demo -o jsonpath='{.spec.host}'
    
    # Access the demo using the provided HTTPS URL
    ```
 
 #### OpenShift Features
+- **Two-Container Architecture**: Separate model and web containers for better resource management
 - **Automatic HTTPS**: Routes provide SSL termination
 - **High Availability**: Automatic pod restart and health checks
-- **Resource Management**: CPU and memory limits/requests
-- **Scaling**: Manual or automatic scaling based on load
-- **Security**: Network policies and security contexts
+- **Resource Management**: Optimized resource allocation per container type
+- **Scaling**: Web containers can scale independently from model containers
+- **Security**: Non-root containers, network policies, and security contexts
+- **API Proxying**: Nginx handles CORS and proxies API calls between containers
 
 #### Monitoring and Troubleshooting
 
 ```bash
 # Check application logs
-oc logs -f deployment/smolvlm-realtime-demo
+oc logs -f deployment/smolvlm-model -n smolvlm-demo
+oc logs -f deployment/smolvlm-web -n smolvlm-demo
 
 # Check pod status
-oc describe pod -l app=smolvlm-realtime-demo
+oc describe pod -l app=smolvlm-model -n smolvlm-demo
+oc describe pod -l app=smolvlm-web -n smolvlm-demo
 
-# Scale the deployment
-oc scale deployment/smolvlm-realtime-demo --replicas=2
+# Scale the web deployment (model typically stays at 1 replica)
+oc scale deployment/smolvlm-web --replicas=3 -n smolvlm-demo
 
-# Update the deployment
-oc rollout restart deployment/smolvlm-realtime-demo
+# Update deployments
+oc rollout restart deployment/smolvlm-model -n smolvlm-demo
+oc rollout restart deployment/smolvlm-web -n smolvlm-demo
+
+# Check service connectivity
+oc port-forward service/smolvlm-model-service 8080:8080 -n smolvlm-demo
+oc port-forward service/smolvlm-web-service 8000:80 -n smolvlm-demo
 ```
 
 ## Usage Guide
@@ -257,9 +280,10 @@ oc rollout restart deployment/smolvlm-realtime-demo
 
 - **Model Loading**: First startup takes 2-5 minutes to download the model
 - **Hardware Requirements**: 
-  - Minimum: 4GB RAM, 2 CPU cores
-  - Recommended: 8GB RAM, 4 CPU cores
-  - GPU acceleration significantly improves performance
+  - Local Development: 4GB RAM, 2 CPU cores minimum
+  - Container Deployment: 4GB RAM, 2 CPU cores minimum (as configured)
+  - OpenShift Production: 4-8GB RAM, 2-4 CPU cores, 1 GPU (configurable limits)
+  - NVIDIA GPU with CUDA support significantly improves performance
 - **Network**: Stable internet connection required for model download
 - **Browser**: Modern browsers with WebRTC support required
 
@@ -269,7 +293,7 @@ oc rollout restart deployment/smolvlm-realtime-demo
 
 1. **Camera not working**: Ensure HTTPS access and grant browser permissions
 2. **Model loading slowly**: First run downloads ~2GB model; subsequent runs are faster
-3. **High CPU usage**: Consider enabling GPU acceleration with `-ngl 99`
+3. **High CPU usage**: Enable GPU acceleration with `-ngl 999` for CUDA GPUs
 4. **CORS errors**: Use the container deployment for proper CORS handling
 
 ### Getting Help
