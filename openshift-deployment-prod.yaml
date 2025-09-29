@@ -1,0 +1,142 @@
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smolvlm-demo-prod
+  labels:
+    name: smolvlm-demo-prod
+
+# NOTE: RHAIIS model service is deployed separately using rhaiis-deployment.yml
+# The service will be available at rhaiis-service.rhaiis.svc.cluster.local:8000
+
+---
+# Production Web Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smolvlm-web-prod
+  namespace: smolvlm-demo-prod
+  labels:
+    app: smolvlm-web-prod
+    component: frontend
+    version: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: smolvlm-web-prod
+  template:
+    metadata:
+      labels:
+        app: smolvlm-web-prod
+        component: frontend
+        version: production
+    spec:
+      containers:
+      - name: smolvlm-web-prod
+        image: quay.io/rh_ee_micyang/smolvlm-web-prod:0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
+
+---
+# Production Web Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: smolvlm-web-prod-service
+  namespace: smolvlm-demo-prod
+  labels:
+    app: smolvlm-web-prod
+spec:
+  selector:
+    app: smolvlm-web-prod
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Production Route for external access
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: smolvlm-demo-prod-route
+  namespace: smolvlm-demo-prod
+  labels:
+    app: smolvlm-web-prod
+  annotations:
+    haproxy.router.openshift.io/timeout: "300s"
+    haproxy.router.openshift.io/balance: "roundrobin"
+spec:
+  to:
+    kind: Service
+    name: smolvlm-web-prod-service
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+
+
+
+
+---
+# Main route for production application
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: smolvlm-demo-prod-main-route
+  namespace: smolvlm-demo-prod
+  labels:
+    app: smolvlm-web-prod
+  annotations:
+    haproxy.router.openshift.io/timeout: "300s"
+    haproxy.router.openshift.io/balance: "roundrobin"
+spec:
+  to:
+    kind: Service
+    name: smolvlm-web-prod-service
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+

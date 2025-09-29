@@ -265,6 +265,155 @@ oc port-forward service/smolvlm-model-service 8080:8080 -n smolvlm-demo
 oc port-forward service/smolvlm-web-service 8000:80 -n smolvlm-demo
 ```
 
+---
+
+### 🏢 Enterprise Production Deployment
+
+For enterprise production environments, this demo includes a specialized deployment using Red Hat AI Inference Server (RHAIIS) with vLLM backend for high-performance inference.
+
+#### Prerequisites
+- Access to an OpenShift cluster with GPU nodes
+- Red Hat AI Inference Server (RHAIIS) subscription
+- `oc` CLI tool installed and configured
+- Container registry access (e.g., Quay.io)
+- Hugging Face token for model access
+
+#### Enterprise Architecture
+The enterprise production deployment uses a sophisticated architecture:
+1. **RHAIIS Container**: Red Hat AI Inference Server with vLLM backend running SmolVLM-500M-Instruct
+2. **Production Web Container**: Optimized frontend with direct RHAIIS integration
+3. **Separate Namespaces**: `rhaiis` for the AI service, `smolvlm-demo-prod` for the web application
+4. **GPU Acceleration**: NVIDIA GPU support for high-performance inference
+5. **Enterprise Security**: Enhanced security policies, resource management, and compliance
+
+#### Deployment Steps
+
+1. **Build and push production container images**
+   
+   ```bash
+   # Login to your container registry
+   podman login quay.io
+   
+   # Build and push production web container
+   ./build-and-push-prod.sh
+   ```
+
+2. **Deploy RHAIIS (Red Hat AI Inference Server)**
+   
+   ```bash
+   # Create RHAIIS namespace and deploy the AI inference service
+   oc apply -f rhaiis-deployment.yml
+   
+   # Monitor RHAIIS deployment and model loading (this takes 5-10 minutes)
+   oc logs -f deployment/rhaiis -n rhaiis
+   
+   # Wait for the model to be fully loaded
+   oc get pods -n rhaiis
+   ```
+
+3. **Deploy production web application**
+   
+   ```bash
+   # Deploy the production web frontend
+   oc apply -f openshift-deployment-prod.yaml
+   
+   # Check deployment status
+   oc get pods -n smolvlm-demo-prod
+   oc get routes -n smolvlm-demo-prod
+   ```
+
+4. **Verify the deployment**
+   
+   ```bash
+   # Test RHAIIS vLLM API endpoint
+   oc port-forward service/rhaiis-service 8000:8000 -n rhaiis
+   curl http://localhost:8000/v1/models
+   
+   # Get the production application URL
+   oc get route smolvlm-demo-prod-main-route -n smolvlm-demo-prod -o jsonpath='{.spec.host}'
+   ```
+
+#### Enterprise Features
+
+- **🚀 High-Performance Inference**: vLLM backend with GPU acceleration
+- **🔒 Enterprise Security**: Enhanced security contexts, network policies, and compliance
+- **📈 Horizontal Pod Autoscaling**: Automatic scaling based on demand
+- **🏗️ Resource Management**: Optimized resource allocation with requests and limits
+- **🔄 High Availability**: Multi-replica deployments with health checks
+- **📊 Monitoring & Observability**: Comprehensive logging and metrics
+- **🌐 Production-Ready**: SSL termination, proper CORS handling, and error management
+- **🎯 GPU Optimization**: NVIDIA GPU support for maximum performance
+- **🔐 Secret Management**: Secure handling of API tokens and credentials
+
+#### Production Configuration
+
+**RHAIIS Configuration:**
+- **Model**: SmolVLM-500M-Instruct via Hugging Face
+- **Backend**: vLLM for high-performance inference
+- **GPU**: NVIDIA GPU acceleration (1 GPU per pod)
+- **Storage**: 50Gi persistent volume for model caching
+- **Resources**: 8Gi RAM, 4 CPU cores, 1 GPU
+
+**Production Web Configuration:**
+- **Replicas**: 3 pods for high availability
+- **Resources**: 512Mi RAM, 500m CPU per pod
+- **Autoscaling**: HPA with CPU and memory targets
+- **Security**: Non-root containers, security contexts
+- **Networking**: Proper service mesh integration
+
+#### Monitoring and Management
+
+```bash
+# Monitor RHAIIS model loading and inference
+oc logs -f deployment/rhaiis -n rhaiis
+
+# Check production web application logs
+oc logs -f deployment/smolvlm-web-prod -n smolvlm-demo-prod
+
+# Scale production web application
+oc scale deployment/smolvlm-web-prod --replicas=5 -n smolvlm-demo-prod
+
+# Check resource usage
+oc top pods -n rhaiis
+oc top pods -n smolvlm-demo-prod
+
+# Monitor HPA status
+oc get hpa -n smolvlm-demo-prod
+
+# Check network policies
+oc get networkpolicy -n rhaiis
+oc get networkpolicy -n smolvlm-demo-prod
+```
+
+#### Performance Optimization
+
+- **GPU Acceleration**: RHAIIS utilizes NVIDIA GPUs for maximum inference speed
+- **Model Caching**: Persistent volumes cache the model for faster startup
+- **Connection Pooling**: Optimized HTTP connections between services
+- **Resource Limits**: Proper resource allocation prevents resource contention
+- **Horizontal Scaling**: Web frontend scales independently from AI backend
+
+#### Troubleshooting
+
+```bash
+# Check RHAIIS model loading status
+oc describe pod -l app=rhaiis -n rhaiis
+
+# Test vLLM API connectivity
+oc port-forward service/rhaiis-service 8000:8000 -n rhaiis
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "SmolVLM-500M-Instruct", "messages": [{"role": "user", "content": "Hello"}]}'
+
+# Check cross-namespace connectivity
+oc exec -it deployment/smolvlm-web-prod -n smolvlm-demo-prod -- \
+  curl http://rhaiis-service.rhaiis.svc.cluster.local:8000/v1/models
+
+# Restart services if needed
+oc rollout restart deployment/rhaiis -n rhaiis
+oc rollout restart deployment/smolvlm-web-prod -n smolvlm-demo-prod
+```
+
 ## Usage Guide
 
 ### Modern Interface Features
